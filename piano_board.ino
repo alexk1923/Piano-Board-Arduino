@@ -67,7 +67,7 @@ void keyChangedOnPCF8574();
 
 PCF8574 pcf8574(0x20, ARDUINO_UNO_INTERRUPTED_PIN, keyChangedOnPCF8574);
 LiquidCrystal_I2C lcd(0x27, 16, 2);  // I2C address 0x27, 16 column and 2 rows
-// char currentFile[15] = "";
+String currentFile = "";
 
 
 volatile long timeFromPress = millis();
@@ -574,18 +574,18 @@ void navigate_sd(int direction) {
 
   while (!foundFile && file.openNext(&root, O_RDONLY)) {
     Serial.println("here");
-      file.getName(fileNames, sizeof(fileNames));
-      if(noFiles == currentFileIndex) {
-        // currentFile = fileNames;
-        // strncat(currentFile, fileNames, 3);
-        lcd.clear();
-        lcd.print(fileNames);
+    file.getName(fileNames, sizeof(fileNames));
+    if (noFiles == currentFileIndex) {
+      currentFile = fileNames;
+      // strncat(currentFile, fileNames, 14);
+      lcd.clear();
+      lcd.print(currentFile);
 
-        // currentFile[i] = '\0';
-        foundFile = true;
-      }
-      noFiles++;
-    
+      // currentFile[i] = '\0';
+      foundFile = true;
+    }
+    noFiles++;
+
     file.close();
     if (rootFileCount > 10) {
       error("Too many files in root. Please use an empty SD.");
@@ -596,9 +596,10 @@ void navigate_sd(int direction) {
 
   // Adjust the current file index if it goes out of bounds
   if (!foundFile) {
-    // strcpy(currentFile, fileNames);
+    currentFile = fileNames;
+    // strncat(currentFile, fileNames, 14);
     lcd.clear();
-    lcd.print(fileNames);
+    lcd.print(currentFile);
     currentFileIndex = noFiles - 1;
   }
 
