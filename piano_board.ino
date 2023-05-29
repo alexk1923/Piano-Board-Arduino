@@ -121,7 +121,7 @@ ISR(PCINT2_vect) {
       // RECORD CASE
       if (recordingToFile == true) {
         // open the file for write at end like the Native SD library
-        if (!myFile.open("data54.txt", O_WRITE | O_APPEND | O_CREAT)) {
+        if (!myFile.open("data.txt", O_WRITE | O_APPEND | O_CREAT)) {
           error("er");
         } else {
           // if the file opened okay, write to it:
@@ -130,7 +130,6 @@ ISR(PCINT2_vect) {
           myFile.println(notes[i]);
           myFile.close();
         }
-        
       }
 
 
@@ -285,37 +284,10 @@ void mode_change() {
 
 
   if (currentModeIdx == 1) {
-      
   }
 
-  // if (currentModeIdx == 2) {
-  //   // Open the file for reading
-  //   int statusOpen = myFile.open("data52.txt", O_READ);
-  //   if (statusOpen) {
-  //     // Read and print each line from the file
-  //     learningNotesSize = 0;
-  //     while (myFile.available() && learningNotesSize < 10) {
-  //       String line = myFile.readStringUntil('\n');
-  //       learningNotes[learningNotesSize++] = line.toInt();
-  //     }
-  //     myFile.close();
-
-  //     if (learningNotesSize > 0) {
-
-  //       Serial.println("My notes:");
-  //       for (int i = 0; i < learningNotesSize; i++) {
-  //         Serial.println(learningNotes[i]);
-  //       }
-
-
-  //       learning = true;
-  //       currentLearningNotesIdx = 0;
-  //       currentLearningNoteChange = true;
-  //     }
-  //   } else {
-  //     Serial.println("Error opening file for reading!");
-  //   }
-  // }
+  if (currentModeIdx == 2) {
+  }
   changeMode = true;
 }
 
@@ -331,7 +303,7 @@ void enter_press() {
       break;
     // RECORD
     case 1:
-      if(recordingToFile == true) {
+      if (recordingToFile == true) {
         Serial.println("Ending rec");
         recordingToFile = false;
       } else {
@@ -410,17 +382,46 @@ void loop() {
     lcdNote = 0;
   }
 
+  if (currentModeIdx == 1 && recordingToFile == true) {
+    lcd.clear();
+    lcd.print("Recording...");
+    delay(200);
+  }
+
+
 
   if (changeMode) {
     lcd.clear();
-    if (currentModeIdx == 2 && recordingToFile == true) {
-      lcd.print("Recording...");
-      delay(200);
+    lcd.print(modes[currentModeIdx]);
+    delay(200);
 
-    } else {
-      lcd.print(modes[currentModeIdx]);
-      delay(200);
+    if (currentModeIdx == 2) {
+      // Prepare recorded song
+      // Open the file for reading
+      int statusOpen = myFile.open("data.txt", O_READ);
+      if (statusOpen) {
+        // Read and print each line from the file
+        learningNotesSize = 0;
+        while (myFile.available() && learningNotesSize < 10) {
+          String line = myFile.readStringUntil('\n');
+          learningNotes[learningNotesSize++] = line.toInt();
+        }
+        myFile.close();
+
+        if (learningNotesSize > 0) {
+          Serial.println("My notes:");
+          for (int i = 0; i < learningNotesSize; i++) {
+            Serial.println(learningNotes[i]);
+          }
+          learning = true;
+          currentLearningNotesIdx = 0;
+          currentLearningNoteChange = true;
+        }
+      } else {
+        Serial.println("Er");
+      }
     }
+
     changeMode = false;
   }
 
