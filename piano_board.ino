@@ -70,7 +70,7 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);  // I2C address 0x27, 16 column and 2 rows
 String currentFile = "";
 
 volatile long timeFromPress = millis();
-long debounceTime = 150;
+long debounceTime = 500;
 volatile int lcdNote = 0;
 volatile bool button_1_pressed = false;
 volatile int button_1_state = HIGH;
@@ -273,10 +273,13 @@ void resetPCF(bool val0, bool val1, bool val2, bool val3) {
 void mode_change() {
 
   currentModeIdx = (currentModeIdx + 1) % 4;
-  changeMode = true;
+
 
   if (currentModeIdx == 0) {
-    audio.stopPlayback();
+    if (audio.isPlaying()) {
+      audio.stopPlayback();
+    }
+    navigate = false;
   }
 
 
@@ -315,7 +318,7 @@ void mode_change() {
     //   Serial.println("Error opening file for reading!");
     // }
   }
-
+  changeMode = true;
 }
 
 void enter_press() {
@@ -348,14 +351,21 @@ void enter_press() {
       // @TODO, navigate in the SD Card to play a song or back to mode select
       // Serial.println("Setting listen mode to true");
       if (navigate == true) {
-        audio.stopPlayback();
-        audioPlay = true;
+        if (audio.isPlaying()) {
+          audio.stopPlayback();
+        }
+
         // currentModeIdx = 0;
         // changeMode = true;
         // navigate = false;
         listenSong = false;
+        audioPlay = true;
       } else {
-        audio.stopPlayback();
+
+        if (audio.isPlaying()) {
+          audio.stopPlayback();
+        }
+
         navigate = true;
         learning = false;
         recordingToFile = false;
@@ -371,14 +381,18 @@ void enter_press() {
 
 void right_button() {
   if (navigate) {
-    audio.stopPlayback();
+    if (audio.isPlaying()) {
+      audio.stopPlayback();
+    }
     navigate_sd(1);
   }
 }
 
 void left_button() {
   if (navigate) {
-    audio.stopPlayback();
+    if (audio.isPlaying()) {
+      audio.stopPlayback();
+    }
     navigate_sd(-1);
   }
 }
@@ -418,6 +432,9 @@ void loop() {
 
 
   if (listenSong) {
+    if (audio.isPlaying()) {
+      audio.stopPlayback();
+    }
     navigate_sd(-1);
     //audio.play("5.wav");
     listenSong = false;
@@ -450,13 +467,11 @@ void loop() {
     pcf8574_interrupt = false;
   }
 
-  if(audioPlay) {
+  if (audioPlay) {
     String songPath = "/Music/" + currentFile;
-    // delay(300);
+    delay(300);
     Serial.println(songPath);
 
-    audio.quality(1);
-    audio.setVolume(5);
     audio.play(songPath.c_str());
     audioPlay = false;
   }
@@ -465,7 +480,7 @@ void loop() {
   if (Serial.available()) {
     switch (Serial.read()) {
       case 'p': audio.play("trot.wav"); break;
-      case 's': audio.stopPlayback(); break;
+      case 's': audio.disable(); break;
       default: break;
     }
   }
@@ -544,5 +559,4 @@ void navigate_sd(int direction) {
     lcd.print(currentFile);
     currentFileIndex = noFiles - 1;
   }
-
 }
