@@ -91,6 +91,8 @@ volatile bool currentLearningNoteChange = false;
 volatile bool pcf8574_interrupt = false;
 volatile bool navigate = false;
 volatile bool audioPlay = false;
+volatile bool prepareRecorded = false;
+
 
 int currentFileIndex = 1;
 
@@ -282,11 +284,18 @@ void mode_change() {
     navigate = false;
   }
 
-
+  // Recording
   if (currentModeIdx == 1) {
   }
 
+  // Learning
   if (currentModeIdx == 2) {
+    recordingToFile = false;
+    prepareRecorded = true;
+  }
+
+  if(currentModeIdx == 3) {
+    learning = false;
   }
   changeMode = true;
 }
@@ -299,7 +308,7 @@ void enter_press() {
       listenSong = false;
       recordingToFile = false;
       navigate = false;
-      Serial.println("Does nothing, it is in free mode");
+      // Serial.println("Does nothing, it is in free mode");
       break;
     // RECORD
     case 1:
@@ -395,7 +404,7 @@ void loop() {
     lcd.print(modes[currentModeIdx]);
     delay(200);
 
-    if (currentModeIdx == 2) {
+    if (currentModeIdx == 2 && prepareRecorded == true) {
       // Prepare recorded song
       // Open the file for reading
       int statusOpen = myFile.open("data.txt", O_READ);
@@ -413,15 +422,15 @@ void loop() {
           for (int i = 0; i < learningNotesSize; i++) {
             Serial.println(learningNotes[i]);
           }
-          learning = true;
           currentLearningNotesIdx = 0;
           currentLearningNoteChange = true;
         }
       } else {
         Serial.println("Er");
       }
+      prepareRecorded = false;
     }
-
+    
     changeMode = false;
   }
 
@@ -513,14 +522,6 @@ void navigate_sd(int direction) {
     currentFileIndex = 0;
   }
 
-
-  if (listenSong == true) {
-    // dir = sd.open("/original", O_READ);
-  }
-
-  if (recordingToFile == true) {
-    // dir = sd.open("/original", O_READ);
-  }
 
   Serial.println(currentFileIndex);
 
