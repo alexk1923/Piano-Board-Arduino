@@ -316,15 +316,16 @@ void mode_change() {
     // }
   }
 
-  if (currentModeIdx == 3) {
-    // listenSong = true;
-  }
 }
 
 void enter_press() {
   switch (currentModeIdx) {
     // FREE
     case 0:
+      learning = false;
+      listenSong = false;
+      recordingToFile = false;
+      navigate = false;
       Serial.println("Does nothing, it is in free mode");
       break;
     // RECORD
@@ -347,22 +348,14 @@ void enter_press() {
       // @TODO, navigate in the SD Card to play a song or back to mode select
       // Serial.println("Setting listen mode to true");
       if (navigate == true) {
-        // char musicPathBuffer[35];
-
-        // sprintf(musicPathBuffer, "/Music/%s", currentFile.c_str());
-        // audio.play(musicPathBuffer);
-        // int x = 2;
-        // int y = 5;
-        //  String cmd = "do this with x = " + String(x) + "and y = " + String(y);
-        // Serial.println(cmd);
+        audio.stopPlayback();
         audioPlay = true;
-
-
-        currentModeIdx = 0;
-        changeMode = true;
-        navigate = false;
+        // currentModeIdx = 0;
+        // changeMode = true;
+        // navigate = false;
         listenSong = false;
       } else {
+        audio.stopPlayback();
         navigate = true;
         learning = false;
         recordingToFile = false;
@@ -378,12 +371,14 @@ void enter_press() {
 
 void right_button() {
   if (navigate) {
+    audio.stopPlayback();
     navigate_sd(1);
   }
 }
 
 void left_button() {
   if (navigate) {
+    audio.stopPlayback();
     navigate_sd(-1);
   }
 }
@@ -456,13 +451,13 @@ void loop() {
   }
 
   if(audioPlay) {
-    String vrajeala = "/Music/" + currentFile;
-    delay(300);
-    Serial.println(vrajeala);
+    String songPath = "/Music/" + currentFile;
+    // delay(300);
+    Serial.println(songPath);
 
     audio.quality(1);
     audio.setVolume(5);
-    audio.play(vrajeala.c_str());
+    audio.play(songPath.c_str());
     audioPlay = false;
   }
 
