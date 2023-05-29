@@ -90,6 +90,7 @@ volatile int currentLearningNotesIdx = -1;
 volatile bool currentLearningNoteChange = false;
 volatile bool pcf8574_interrupt = false;
 volatile bool navigate = false;
+volatile bool audioPlay = false;
 
 int currentFileIndex = 1;
 
@@ -106,11 +107,9 @@ ISR(PCINT2_vect) {
     if (!currentState[i] && button_1_state == HIGH) {
       // Serial.println("Butonul este acum LOW, iar in trecut era HIGH");
       button_1_pressed = true;
-      timeFromPress = actTime;
       lcdNote = notes[i];
     } else if (currentState[i] && button_1_state == LOW) {  // Check for rising edge trigger
       button_1_pressed = false;
-      timeFromPress = actTime;
       // Serial.println("Butonul este acum HIGH, iar in trecut era LOW");
     }
 
@@ -347,8 +346,18 @@ void enter_press() {
     case 3:
       // @TODO, navigate in the SD Card to play a song or back to mode select
       // Serial.println("Setting listen mode to true");
-      if (navigate) {
-        audio.play("/Music/3.wav");
+      if (navigate == true) {
+        // char musicPathBuffer[35];
+
+        // sprintf(musicPathBuffer, "/Music/%s", currentFile.c_str());
+        // audio.play(musicPathBuffer);
+        // int x = 2;
+        // int y = 5;
+        //  String cmd = "do this with x = " + String(x) + "and y = " + String(y);
+        // Serial.println(cmd);
+        audioPlay = true;
+
+
         currentModeIdx = 0;
         changeMode = true;
         navigate = false;
@@ -444,6 +453,17 @@ void loop() {
 
     resetPCF(val0, val1, val2, val3);
     pcf8574_interrupt = false;
+  }
+
+  if(audioPlay) {
+    String vrajeala = "/Music/" + currentFile;
+    delay(300);
+    Serial.println(vrajeala);
+
+    audio.quality(1);
+    audio.setVolume(5);
+    audio.play(vrajeala.c_str());
+    audioPlay = false;
   }
 
 
