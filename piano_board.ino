@@ -14,6 +14,7 @@ The line #define SDFAT MUST be uncommented in pcmConfig.h
 */
 
 #include <SdFat.h>
+#include <ctype.h>
 SdFat sd;
 
 #define SD_ChipSelectPin 4  //use digital pin 4 on arduino Uno, nano etc, or can use other pins
@@ -64,11 +65,9 @@ File file;
 // Function interrupt
 void keyChangedOnPCF8574();
 
-
 PCF8574 pcf8574(0x20, ARDUINO_UNO_INTERRUPTED_PIN, keyChangedOnPCF8574);
 LiquidCrystal_I2C lcd(0x27, 16, 2);  // I2C address 0x27, 16 column and 2 rows
 String currentFile = "";
-
 
 volatile long timeFromPress = millis();
 long debounceTime = 150;
@@ -79,7 +78,7 @@ volatile int button_1_state = HIGH;
 byte buttons[4] = { BUTTON_1, BUTTON_2, BUTTON_3, BUTTON_4 };
 int notes[4] = { NOTE_C4, NOTE_D4, NOTE_E4, NOTE_F4 };
 byte leds[4] = { LED_1, LED_2, LED_3, LED_4 };
-String modes[4] = { "FREE", "RECORD", "LEARN", "LISTEN" };
+char modes[4][7] = { "FREE", "RECORD", "LEARN", "LISTEN" };
 volatile int currentModeIdx = 0;
 volatile bool changeMode = true;
 volatile bool recordingToFile = false;
@@ -97,62 +96,6 @@ int currentFileIndex = 1;
 
 ISR(PCINT2_vect) {
   // cod întrerupere de tip pin change
-  // TODO
-
-
-  /*
-  Serial.println("Intrerupere de tip pin change");
-  Serial.print("currentState=" );
-  Serial.println(currentState[0]);
-  Serial.print("button_1_state=" );
-  Serial.println(button_1_state);
-*/
-
-  long actTime = millis();
-
-  if (actTime - timeFromPress > debounceTime) {
-
-
-    /*
-    if ((PIND & (1 << ENTER_BUTTON)) == 0) {
-      switch (currentModeIdx) {
-        // FREE
-        case 0:
-          Serial.println("Does nothing, it is in free mode");
-          break;
-        // RECORD
-        case 1:
-          if (recordingToFile) {
-            Serial.println("First branch");
-            myFile.close();
-          } else {
-            Serial.println("Second Branch");
-            recordingToFile = true;
-          }
-          learning = false;
-          listenSong = false;
-          break;
-        // LEARN
-        case 2:
-          learning = true;
-          recordingToFile = false;
-          listenSong = false;
-          break;
-        // LISTEN
-        case 3:
-          // @TODO, navigate in the SD Card to play a song or back to mode select
-          listenSong = true;
-          learning = false;
-          recordingToFile = false;
-          break;
-        default:
-          Serial.println("Index error");
-          break;
-      }
-    }*/
-
-    timeFromPress = actTime;
-  }
 
   int currentState[4];
   for (int i = 0; i < 4; i++) {
@@ -220,37 +163,12 @@ ISR(PCINT2_vect) {
 }
 
 void setup_interrupts() {
-  // buton 1: PD2 / INT0
-  // buton 2: PD4 / PCINT20
   cli();
 
   // configurare intreruperi
-  // intreruperi externe
-  // EICRA |= (1 << ISC00);    // set INT0 to trigger on ANY logic change
-
-  // întreruperi de tip pin change (activare vector de întreruperi)
-
-  /*
-  PCICR |= (1 << PCIE0); // enable the pin change interrupt, set PCIE0 to enable PCMSK0 scan
-  PCMSK0 |= (1 << PCINT2); // Enable interrupt for PCINT0 and PCINT2
-  */
-
-  // activare intreruperi
-  // intrerupere externa
-
-  // activeaza asta daca vrei sa mearga intreruperea externa pe INT0
-  // EIMSK |= (1 << INT0);
 
   PCICR |= (1 << PCIE2);  // enable the pin change interrupt, set PCIE2 to enable PCMSK2 scan
-  // PCICR |= (1 << PCIE0); // enable the pin change interrupt, set PCIE2 to enable PCMSK2 scan
 
-  // întrerupere de tip pin change
-  // PCMSK0 |= (1 << PCINT0); // Turns on PCINT0 (PB0)
-  // PCMSK0 |= (1 << PCINT2); // Turns on PCINT2 (PB2)
-
-
-  //PCMSK2 |= (1 << PCINT16); // Turns on PCINT18 (PD2)
-  // PCMSK2 |= (1 << PCINT18);  // Turns on PCINT18 (PD2)
   PCMSK2 |= (1 << PCINT19);  // Turns on PCINT19 (PD3)
   PCMSK2 |= (1 << PCINT21);  // Turns on PCINT21 (PD5)
   PCMSK2 |= (1 << PCINT22);  // Turns on PCINT22 (PD6)
@@ -429,10 +347,19 @@ void enter_press() {
     case 3:
       // @TODO, navigate in the SD Card to play a song or back to mode select
       // Serial.println("Setting listen mode to true");
-      navigate = true;
-      learning = false;
-      recordingToFile = false;
-      listenSong = true;
+      if (navigate) {
+        audio.play("/Music/3.wav");
+        currentModeIdx = 0;
+        changeMode = true;
+        navigate = false;
+        listenSong = false;
+      } else {
+        navigate = true;
+        learning = false;
+        recordingToFile = false;
+        listenSong = true;
+      }
+
       break;
     default:
       Serial.println("Index error");
@@ -464,7 +391,7 @@ void loop() {
 
   if (changeMode) {
     lcd.clear();
-    if (modes[currentModeIdx] == "RECORD" && recordingToFile) {
+    if (strcmp(modes[currentModeIdx], "RECORD") == 0 && recordingToFile) {
       lcd.print("Recording...");
       delay(200);
 
@@ -565,7 +492,7 @@ void navigate_sd(int direction) {
 
   char fileNames[15];
   int rootFileCount = 0;
-  if (!root.open("/original")) {
+  if (!root.open("/Music")) {
     error("open root");
   }
   // strcpy(fileNames[0], "ddd");
@@ -603,37 +530,4 @@ void navigate_sd(int direction) {
     currentFileIndex = noFiles - 1;
   }
 
-
-  // Print the current file name
-
-
-  // Serial.print("Current File: ");
-  // Serial.println(fileNames[currentFileIndex]);
-
-  /*
-  if (currentFileIndex < 0) {
-    currentFileIndex = noFiles - 1;
-  } else if (currentFileIndex >= noFiles) {
-    currentFileIndex = 0;
-  }
-
-  Serial.print("Current File: ");
-  Serial.println(files[currentFileIndex]);*/
-  // while (true) {
-  //   File file = dir.openNextFile();
-  //   if (!file) {
-  //     // no more files
-  //     break;
-  //   }
-
-  //   char filename[13];
-  //   file.getName(filename, sizeof(filename));
-  //   lcd.print(filename);
-  //   delay(5000);
-  //   lcd.clear();
-  //   Serial.println(filename);
-  //   //Serial.print("Size: ");
-  //   //Serial.println(file.size());
-  //   file.close();
-  // }
 }
