@@ -295,6 +295,10 @@ void mode_change() {
   }
 
   if(currentModeIdx == 3) {
+    for(int i = 0; i < 4; i++) {
+      digitalWrite(leds[i], LOW);
+    }
+    
     learning = false;
   }
   changeMode = true;
