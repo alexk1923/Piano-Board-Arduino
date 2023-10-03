@@ -3,9 +3,6 @@
 #include "PCF8574.h"
 #include "sdios.h"
 /* 
-This example demonstrates how to use the SDFAT library for audio playback.
-Read time and program space are reduced by using SDFAT directly
-
 Requirements:
 The SDFAT library must be installed. See http://code.google.com/p/sdfatlib/ 
 The line #define SDFAT MUST be uncommented in pcmConfig.h
@@ -17,11 +14,11 @@ The line #define SDFAT MUST be uncommented in pcmConfig.h
 #include <ctype.h>
 SdFat sd;
 
-#define SD_ChipSelectPin 4  //use digital pin 4 on arduino Uno, nano etc, or can use other pins
-#include <TMRpcm.h>         //  also need to include this library...
+#define SD_ChipSelectPin 4  // Use digital pin 4 on arduino Uno, nano etc, or can use other pins
+#include <TMRpcm.h>         //  Also need to include this library...
 #include <SPI.h>
 
-TMRpcm audio;  // create an object for use in this sketch
+TMRpcm audio;  // Create an object for use in this sketch
 
 // Try max SPI clock for an SD. Reduce SPI_CLOCK if errors occur.
 #define SPI_CLOCK SD_SCK_MHZ(50)
@@ -52,11 +49,6 @@ TMRpcm audio;  // create an object for use in this sketch
 #define LED_2 A1
 #define LED_3 A2
 #define LED_4 A3
-
-// #define FREE_MODE "FREE"
-// #define RECORD_MODE "RECORD"
-// #define LEARN_MODE "LEARN"
-// #define LISTEN_MODE "LISTEN"
 
 File root;
 File myFile;
@@ -98,7 +90,7 @@ int currentFileIndex = 1;
 
 
 ISR(PCINT2_vect) {
-  // cod întrerupere de tip pin change
+  // PIN Change interrupt
 
   int currentState[4];
   for (int i = 0; i < 4; i++) {
@@ -107,12 +99,10 @@ ISR(PCINT2_vect) {
 
   for (int i = 0; i < 4; i++) {
     if (!currentState[i] && button_1_state == HIGH) {
-      // Serial.println("Butonul este acum LOW, iar in trecut era HIGH");
       button_1_pressed = true;
       lcdNote = notes[i];
     } else if (currentState[i] && button_1_state == LOW) {  // Check for rising edge trigger
       button_1_pressed = false;
-      // Serial.println("Butonul este acum HIGH, iar in trecut era LOW");
     }
 
     // If learning mode is not activated or is activated and the correct button has been pressed
@@ -127,7 +117,6 @@ ISR(PCINT2_vect) {
           error("er");
         } else {
           // if the file opened okay, write to it:
-          Serial.print("W");
           delay(1000);
           myFile.println(notes[i]);
           myFile.close();
@@ -149,8 +138,6 @@ ISR(PCINT2_vect) {
         currentLearningNoteChange = true;
         digitalWrite(leds[i], LOW);
 
-        Serial.println("Current Learning Notes Index:");
-        Serial.println(currentLearningNotesIdx);
       }
 
     } else {
@@ -166,9 +153,9 @@ ISR(PCINT2_vect) {
 void setup_interrupts() {
   cli();
 
-  // configurare intreruperi
+  // Interrupts config
 
-  PCICR |= (1 << PCIE2);  // enable the pin change interrupt, set PCIE2 to enable PCMSK2 scan
+  PCICR |= (1 << PCIE2);  // Enable the pin change interrupt, set PCIE2 to enable PCMSK2 scan
 
   PCMSK2 |= (1 << PCINT19);  // Turns on PCINT19 (PD3)
   PCMSK2 |= (1 << PCINT21);  // Turns on PCINT21 (PD5)
@@ -179,8 +166,8 @@ void setup_interrupts() {
 }
 
 void setup_lcd() {
-  lcd.begin();      //initialize the lcd
-  lcd.backlight();  //open the backlight
+  lcd.begin();      // Initialize the lcd
+  lcd.backlight();  // Open the backlight
 }
 
 
@@ -232,8 +219,7 @@ void setup() {
     Serial.println("SD OK");
   }
 
-  audio.speakerPin = 9;  //5,6,11 or 46 on Mega, 9 on Uno, Nano, etc
-  // pinMode(10,OUTPUT); //Pin pairs: 9,10 Mega: 5-2,6-7,11-12,46-45
+  audio.speakerPin = 9;  // 5,6,11 or 46 on Mega, 9 on Uno, Nano, etc
 
   Serial.println("done!");
   audio.setVolume(5);
@@ -312,15 +298,12 @@ void enter_press() {
       listenSong = false;
       recordingToFile = false;
       navigate = false;
-      // Serial.println("Does nothing, it is in free mode");
       break;
     // RECORD
     case 1:
       if (recordingToFile == true) {
-        Serial.println("Ending rec");
         recordingToFile = false;
       } else {
-        Serial.println("rec true");
         learning = false;
         listenSong = false;
         navigate = false;
@@ -329,7 +312,6 @@ void enter_press() {
       break;
     // LEARN
     case 2:
-      //Serial.println("Setting learning mode to true");
       delay(100);
       recordingToFile = false;
       listenSong = false;
@@ -337,16 +319,10 @@ void enter_press() {
       break;
     // LISTEN
     case 3:
-      // @TODO, navigate in the SD Card to play a song or back to mode select
-      // Serial.println("Setting listen mode to true");
       if (navigate == true) {
         if (audio.isPlaying()) {
           audio.stopPlayback();
         }
-
-        // currentModeIdx = 0;
-        // changeMode = true;
-        // navigate = false;
         listenSong = false;
         audioPlay = true;
       } else {
@@ -389,8 +365,6 @@ void left_button() {
 void loop() {
 
   if (lcdNote != 0) {
-    // lcd.clear();
-    // lcd.print(lcdNote);
     delay(200);
     lcdNote = 0;
   }
@@ -454,7 +428,6 @@ void loop() {
       audio.stopPlayback();
     }
     navigate_sd(-1);
-    //audio.play("5.wav");
     listenSong = false;
   }
 
@@ -508,11 +481,8 @@ void loop() {
 
 void keyChangedOnPCF8574() {
 
-  // bool val1 = pcf8574.digitalRead(P1);
-  // bool val2 = pcf8574.digitalRead(P2);
   long actTime = millis();
   if (actTime - timeFromPress > debounceTime) {
-    //uint8_t val0 = pcf8574.digitalRead(P0);
     pcf8574_interrupt = true;
   }
 }
@@ -520,22 +490,19 @@ void keyChangedOnPCF8574() {
 
 void navigate_sd(int direction) {
   currentFileIndex += direction;
-  // Navigate in SD Card
 
+  // Navigate in SD Card
   if (currentFileIndex < 0) {
     currentFileIndex = 0;
   }
 
-
   Serial.println(currentFileIndex);
-
 
   char fileNames[15];
   int rootFileCount = 0;
   if (!root.open("/Music")) {
     error("open root");
   }
-  // strcpy(fileNames[0], "ddd");
   int noFiles = 0;
   bool foundFile = false;
 
@@ -544,11 +511,8 @@ void navigate_sd(int direction) {
     file.getName(fileNames, sizeof(fileNames));
     if (noFiles == currentFileIndex) {
       currentFile = fileNames;
-      // strncat(currentFile, fileNames, 14);
       lcd.clear();
       lcd.print(currentFile);
-
-      // currentFile[i] = '\0';
       foundFile = true;
     }
     noFiles++;
@@ -564,7 +528,6 @@ void navigate_sd(int direction) {
   // Adjust the current file index if it goes out of bounds
   if (!foundFile) {
     currentFile = fileNames;
-    // strncat(currentFile, fileNames, 14);
     lcd.clear();
     lcd.print(currentFile);
     currentFileIndex = noFiles - 1;
